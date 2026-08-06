@@ -1,6 +1,6 @@
 {
   "name": "@desaubv/quik",
-  "version": "0.0.2",
+  "version": "0.0.21",
   "description": "Quik",
   "type": "module",
   "main": "./dist/index.cjs",

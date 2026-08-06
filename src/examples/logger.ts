@@ -16,6 +16,12 @@ logger.setConfig({
     }
 })
 
+logger.setConfig({
+    save: {
+        errorFilePath: "logs/error.log",
+    }
+})
+
 logger.log("Hello World", 15);
 logger.warning("Lorem ipsum", null);
 logger.error({ error: "IOERROR", message: "An error was encountred" });

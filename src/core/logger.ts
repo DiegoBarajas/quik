@@ -50,7 +50,7 @@ type PartialConfig = Partial<{
 const defaultConfig: Config = {
     save: {
         logFilePath: null,
-        errorFilePath: "logs/error.log",
+        errorFilePath: null, //"logs/error.log",
         warningFilePath: null,
     },
     color: {
@@ -60,7 +60,7 @@ const defaultConfig: Config = {
         debugColor: null
     },
     format: {
-        timestampFormat: "dd/MM/yyyy HH:mm:ss",
+        timestampFormat: "DD-MM-YYYY hh:mm:ss",
         titleCase: "uppercase",
     }
 }
