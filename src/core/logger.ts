@@ -1,37 +1,39 @@
 import fs from "node:fs"
 import path from "node:path";
 
-import colors from "colors"
-
+import {colors} from "./colors.js"
 import { dateToString } from "./time.js";
 
 /* Types */
 type ConfigValue = string | null | false;
 type Cases = "uppercase" | "lowercase" | "capitalize" | "none" | null;
 type ColorName =
+    | "black"
     | "red"
     | "green"
     | "yellow"
     | "blue"
     | "magenta"
     | "cyan"
-    | "white"
-    | "gray";
+    | "white";
 
+type ColorValue = ColorName | null;
 type SaveConfig = {
     logFilePath: ConfigValue,
     errorFilePath: ConfigValue,
     warningFilePath: ConfigValue,
 }
 type ColorConfig = {
-    logColor: ColorName | null | false;
-    errorColor: ColorName | null | false;
-    warningColor: ColorName | null | false;
-    debugColor: ColorName | null | false;
+    logColor: ColorValue;
+    errorColor: ColorValue;
+    warningColor: ColorValue;
+    debugColor: ColorValue;
 }
 type Formatconfig = {
     timestampFormat: ConfigValue,
     titleCase: Cases,
+    prefix?: string
+    suffix?: string
 }
 
 type Config = {
@@ -55,7 +57,7 @@ const defaultConfig: Config = {
         logColor: "blue",
         errorColor: "red",
         warningColor: "yellow",
-        debugColor: null,
+        debugColor: null
     },
     format: {
         timestampFormat: "dd/MM/yyyy HH:mm:ss",
@@ -95,24 +97,26 @@ function write(
     file: ConfigValue,
     ...content: unknown[]
 ) {
-    const body = parseContent(level, ...content);
+    const [ header, body ] = parseContent(level, ...content);
+    saveToFile(file, header + body);
 
-    saveToFile(file, body);
+    const prefix = config.format.prefix ?? "";
+    const suffix = config.format.suffix ?? "";
 
     if (color) {
         const colorFn = colors[color] ?? ((s: string) => s);
-        console.log(colorFn(body));
+        console.log(`${prefix}${header}${colorFn(body)}${suffix}`);
     } else {
-        console.log(body);
+        console.log(`${prefix}${header}${body}${suffix}`);
     }
 }
 
-function parseContent(level: string, ...body: unknown[]): string {
-    let message = ""
+function parseContent(level: string, ...body: unknown[]) : [string, string] {
+    let header = "";
     if (config.format.timestampFormat) {
         const timestamp = dateToString(new Date(), config.format.timestampFormat);
-        message += `${timestamp} `;
-    }
+        header += `${timestamp} `;
+    }    
 
     switch (config.format.titleCase) {
         case "uppercase":
@@ -131,9 +135,8 @@ function parseContent(level: string, ...body: unknown[]): string {
             level = "";
             break;
     }
-
-    message += level + tokenize(...body).join(" ");
-    return message;
+    let content = level + tokenize(...body).join(" ");
+    return [ header, content ];
 }
 
 function saveToFile(filePath: ConfigValue, content: string): void {
@@ -146,24 +149,30 @@ function saveToFile(filePath: ConfigValue, content: string): void {
     fs.appendFileSync(filePath, logMessage);
 }
 
+function mergeConfig(
+    current: Config,
+    update: PartialConfig
+): Config {
+    return {
+        save: {
+            ...current.save,
+            ...update.save,
+        },
+        color: {
+            ...current.color,
+            ...update.color,
+        },
+        format: {
+            ...current.format,
+            ...update.format,
+        },
+    };
+}
+
 export const logger = {
     // Setter config
     setConfig(newConfig: PartialConfig): void {
-        config = {
-            ...config,
-            save: {
-                ...config.save,
-                ...newConfig.save,
-            },
-            color: {
-                ...config.color,
-                ...newConfig.color,
-            },
-            format: {
-                ...config.format,
-                ...newConfig.format,
-            },
-        };
+        config = mergeConfig(config, newConfig);
     },
 
     // Getter config
