@@ -1,0 +1,41 @@
+{
+  "name": "@desaubv/quik",
+  "version": "0.0.1",
+  "description": "Quik",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "keywords": [
+    "quik",
+    "logger",
+    "logging",
+    "typescript",
+    "nodejs"
+  ],
+  "author": "desaubv",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.6",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "colors": "^1.4.0"
+  }
+}
