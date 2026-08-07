@@ -1,6 +1,6 @@
 {
   "name": "@desaubv/quik",
-  "version": "0.0.21",
+  "version": "0.0.3",
   "description": "Quik",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -30,8 +30,12 @@
   "author": "desaubv",
   "license": "ISC",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^26.1.2",
     "tsup": "^8.5.1",
     "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }
