@@ -1,7 +1,7 @@
 {
   "name": "@desaubv/quik",
-  "version": "0.0.3",
-  "description": "Quik",
+  "version": "0.0.31",
+  "description": "Quik is an Express-based library designed to simplify the creation of modern backends. It allows you to build APIs quickly, reducing repetitive code through clean syntax and intuitive tools.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,10 +25,23 @@
     "logger",
     "logging",
     "typescript",
-    "nodejs"
+    "nodejs",
+    "express",
+    "router",
+    "middleware",
+    "typescript",
+    "backend"
   ],
   "author": "desaubv",
-  "license": "ISC",
+  "homepage": "https://github.com/DiegoBarajas/quik",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DiegoBarajas/quik.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DiegoBarajas/quik/issues"
+  },
+  "license": "MIT",
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.2",
