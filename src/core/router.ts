@@ -11,10 +11,10 @@ type HttpMethod =
     | "head"
     | "all";
 
-class Router {
+class QuickRouter {
     readonly router: RouterType;
     private pendingMiddleware: RequestHandler[] = [];
-    private pnedingPath: string = "";
+    private currentPath: string = "";
 
     constructor() {
         this.router = ExpressRouter();
@@ -26,7 +26,7 @@ class Router {
     }
 
     path(path: string) {
-        this.pnedingPath = path;
+        this.currentPath = path;
         return this;
     }
 
@@ -35,7 +35,7 @@ class Router {
         handler: RequestHandler
     ) {
         this.router[method](
-            this.pnedingPath,
+            this.currentPath,
             ...this.pendingMiddleware,
             async (req, res, next) => {
                 try {
@@ -47,7 +47,7 @@ class Router {
         );
 
         this.pendingMiddleware = [];
-        this.pnedingPath = "";
+        this.currentPath = "";
 
         return this;
     }
@@ -74,4 +74,8 @@ class Router {
     
 }
 
-export { Router };
+function Router() {
+    return new QuickRouter;
+}
+
+export { QuickRouter, Router };

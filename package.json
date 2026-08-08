@@ -1,6 +1,6 @@
 {
   "name": "@desaubv/quik",
-  "version": "0.0.31",
+  "version": "0.0.4",
   "description": "Quik is an Express-based library designed to simplify the creation of modern backends. It allows you to build APIs quickly, reducing repetitive code through clean syntax and intuitive tools.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -22,8 +22,6 @@
   },
   "keywords": [
     "quik",
-    "logger",
-    "logging",
     "typescript",
     "nodejs",
     "express",

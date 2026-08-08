@@ -1,0 +1,6 @@
+{
+    "server": {
+        "name": "server",
+        "start": "Server running at"
+    }
+}

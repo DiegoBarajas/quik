@@ -36,7 +36,7 @@ type Formatconfig = {
     suffix?: string
 }
 
-type Config = {
+type LoggerConfig = {
     save: SaveConfig,
     color: ColorConfig,
     format: Formatconfig,
@@ -47,7 +47,7 @@ type PartialConfig = Partial<{
     format: Partial<Formatconfig>;
 }>;
 
-const defaultConfig: Config = {
+const defaultConfig: LoggerConfig = {
     save: {
         logFilePath: null,
         errorFilePath: null, //"logs/error.log",
@@ -150,9 +150,9 @@ function saveToFile(filePath: ConfigValue, content: string): void {
 }
 
 function mergeConfig(
-    current: Config,
+    current: LoggerConfig,
     update: PartialConfig
-): Config {
+): LoggerConfig {
     return {
         save: {
             ...current.save,
@@ -176,7 +176,7 @@ export const logger = {
     },
 
     // Getter config
-    config(): Readonly<Config> {
+    config(): Readonly<LoggerConfig> {
         return Object.freeze(structuredClone(config));
     },
 
