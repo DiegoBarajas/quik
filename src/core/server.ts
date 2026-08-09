@@ -3,11 +3,9 @@ import http, { type Server as HTTPServer } from "node:http";
 
 import type { QuickRouter } from "./router.js";
 import { logger } from "./logger.js";
-import { httpErrorHandler } from "../handlers/httpErrorHandler.js";
-import { notFoundHandler } from "../handlers/notFoundHandler.js";
 import { translate } from "./translator.js";
+import { isValidTimeZone } from "./time.js";
 
-type Language = "en" | "es";
 type JsonOptions = Parameters<typeof express.json>[0];
 type UrlencodedOptions = Parameters<typeof express.urlencoded>[0];
 type RawOptions = Parameters<typeof express.raw>[0];
@@ -43,6 +41,7 @@ type ExpressConfig = {
 };
 type QuikServerConfig = {
     language: Language,
+    timeZone?: string;
     bodyParser: BodyParserConfig;
     http: HTTPConfig;
     express: ExpressConfig;
@@ -67,29 +66,42 @@ class QuikServer {
     httpQuikServer: HTTPServer;
     middlewares: RequestHandler[] = [];
     routes: RoutingDict = {};
-    config: QuikServerConfig;
+    #config: QuikServerConfig;
 
     constructor() {
         this.app = express();
-        this.config = structuredClone(defaultConfig);
+        this.#config = structuredClone(defaultConfig);
         this.httpQuikServer = http.createServer(
             this.app
         );
     }
 
-    configure(config: Partial<QuikServerConfig>) {
-        this.config = {
-            ...this.config,
+    config(): Readonly<QuikServerConfig> {
+        return Object.freeze(structuredClone(this.#config));
+    }
+
+    setConfig(config: Partial<QuikServerConfig>) {
+        this.#config = {
+            ...this.#config,
             ...config,
             http: {
-                ...this.config.http,
+                ...this.#config.http,
                 ...config.http
             },
             express: {
-                ...this.config.express,
+                ...this.#config.express,
                 ...config.express
             }
         };
+
+        // Notify if the provided time zone is invalid
+        if (config.timeZone && !isValidTimeZone(config.timeZone)) {
+            const messages = translate(this.#config.language, "time");
+
+            logger.warning(
+                `${messages.invalidTimeZone1} ${config.timeZone}. ${messages.invalidTimeZone2}`
+            );
+        }
 
         return this;
     }
@@ -109,19 +121,19 @@ class QuikServer {
 
 
     listen() {
-        const { port, host } = this.config.http;
-        const messages = translate(this.config.language, "server");
+        const { port, host } = this.#config.http;
+        const messages = translate(this.#config.language, "server");
 
         this.httpQuikServer.listen(port, host, () => {
-                logger.custom(messages.name, "green", null, `${messages.start} ${host ?? "localhost"}:${port}`);
-            }
+            logger.info(`${messages.start} ${host ?? "localhost"}:${port}`);
+        }
         );
 
         return this;
     }
 
     #configureHTTP() {
-        const config = this.config.http;
+        const config = this.#config.http;
 
         if (config.timeout)
             this.httpQuikServer.timeout = config.timeout;
@@ -136,7 +148,7 @@ class QuikServer {
     }
 
     #configureExpress() {
-        const config = this.config.express;
+        const config = this.#config.express;
 
         if (config.trustProxy !== undefined) {
             this.app.set(
@@ -150,7 +162,7 @@ class QuikServer {
     }
 
     #configureMiddleware() {
-        const bodyParser = this.config.bodyParser;
+        const bodyParser = this.#config.bodyParser;
 
         switch (bodyParser.type) {
             case "json":

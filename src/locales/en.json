@@ -1,6 +1,19 @@
 {
+    "logger": {
+        "levels": {
+            "log": "log",
+            "info": "info",
+            "warning": "warning",
+            "error": "error",
+            "debug": "debug"
+        }
+    },
     "server": {
         "name": "server",
         "start": "Server running at"
+    },
+    "time": {
+        "invalidTimeZone1": "Invalid time zone:",
+        "invalidTimeZone2": "Using system default time zone."
     }
 }

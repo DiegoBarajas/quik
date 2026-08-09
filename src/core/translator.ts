@@ -1,21 +1,23 @@
 import en from "../locales/en.json" with { type: "json" };
 import es from "../locales/es.json" with { type: "json" };
 
+type Locale = typeof en;
+
 const locales = {
     en,
-    es
-};
+    es,
+} satisfies Record<string, Locale>;
 
 type Language = keyof typeof locales;
-type TranslationKey = keyof typeof en;
+type TranslationKey = keyof Locale;
 
-function translate(
+function translate<K extends TranslationKey>(
     language: Language,
-    key: TranslationKey
-) {
+    key: K
+): Locale[K] {
     return locales[language][key];
 }
 
 export {
-    translate
+    translate,
 };

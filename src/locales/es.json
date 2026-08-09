@@ -1,6 +1,19 @@
 {
+    "logger": {
+        "levels": {
+            "log": "log",
+            "info": "info",
+            "warning": "advertencia",
+            "error": "error",
+            "debug": "depuración"
+        }
+    },
     "server": {
         "name": "servidor",
         "start": "Servidor corriendo en"
+    },
+    "time": {
+        "invalidTimeZone1": "Zona horaria inválida:",
+        "invalidTimeZone2": "Usando la zona horaria predeterminada del sistema."
     }
 }

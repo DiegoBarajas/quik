@@ -1,8 +1,9 @@
 import fs from "node:fs"
 import path from "node:path";
 
-import {colors} from "./colors.js"
-import { dateToString } from "./time.js";
+import { colors } from "./colors.js"
+import { dateToString, isValidTimeZone } from "./time.js";
+import { translate } from "./translator.js";
 
 /* Types */
 type ConfigValue = string | null | false;
@@ -19,12 +20,14 @@ type ColorName =
 
 type ColorValue = ColorName | null;
 type SaveConfig = {
+    infoFilePath: ConfigValue,
     logFilePath: ConfigValue,
     errorFilePath: ConfigValue,
     warningFilePath: ConfigValue,
 }
 type ColorConfig = {
     logColor: ColorValue;
+    infoColor: ColorValue;
     errorColor: ColorValue;
     warningColor: ColorValue;
     debugColor: ColorValue;
@@ -34,9 +37,11 @@ type Formatconfig = {
     titleCase: Cases,
     prefix?: string
     suffix?: string
+    timeZone?: string
 }
 
 type LoggerConfig = {
+    language: Language,
     save: SaveConfig,
     color: ColorConfig,
     format: Formatconfig,
@@ -48,20 +53,23 @@ type PartialConfig = Partial<{
 }>;
 
 const defaultConfig: LoggerConfig = {
+    language: "en",
     save: {
         logFilePath: null,
-        errorFilePath: null, //"logs/error.log",
-        warningFilePath: null,
+        infoFilePath: null,
+        errorFilePath: "logs/error.log",
+        warningFilePath: "logs/warning.log",
     },
     color: {
         logColor: "blue",
+        infoColor: "green",
         errorColor: "red",
         warningColor: "yellow",
         debugColor: null
     },
     format: {
         timestampFormat: "DD-MM-YYYY hh:mm:ss",
-        titleCase: "uppercase",
+        titleCase: "uppercase"
     }
 }
 
@@ -97,7 +105,7 @@ function write(
     file: ConfigValue,
     ...content: unknown[]
 ) {
-    const [ header, body ] = parseContent(level, ...content);
+    const [header, body] = parseContent(level, ...content);
     saveToFile(file, header + body);
 
     const prefix = config.format.prefix ?? "";
@@ -111,12 +119,25 @@ function write(
     }
 }
 
-function parseContent(level: string, ...body: unknown[]) : [string, string] {
+function parseContent(level: string, ...body: unknown[]): [string, string] {
     let header = "";
     if (config.format.timestampFormat) {
-        const timestamp = dateToString(new Date(), config.format.timestampFormat);
+        const now = new Date();
+        const timeZone = config.format.timeZone;
+        let tz = timeZone;
+
+        if (timeZone && !isValidTimeZone(timeZone)) {
+            tz = undefined;
+        }
+
+        const timestamp = dateToString(
+            now,
+            config.format.timestampFormat,
+            tz
+        );
+
         header += `${timestamp} `;
-    }    
+    }
 
     switch (config.format.titleCase) {
         case "uppercase":
@@ -136,7 +157,7 @@ function parseContent(level: string, ...body: unknown[]) : [string, string] {
             break;
     }
     let content = level + tokenize(...body).join(" ");
-    return [ header, content ];
+    return [header, content];
 }
 
 function saveToFile(filePath: ConfigValue, content: string): void {
@@ -154,6 +175,8 @@ function mergeConfig(
     update: PartialConfig
 ): LoggerConfig {
     return {
+        ...current,
+        ...update,
         save: {
             ...current.save,
             ...update.save,
@@ -181,17 +204,29 @@ export const logger = {
     },
 
     log(...content: unknown[]) {
+        const messages = translate(config.language, "logger");
         write(
-            "log",
+            messages.levels.log,
             config.color.logColor,
             config.save.logFilePath,
             ...content
         );
     },
 
-    error(...content: unknown[]) {
+    info(...content: unknown[]) {
+        const messages = translate(config.language, "logger");
         write(
-            "error",
+            messages.levels.info,
+            config.color.infoColor,
+            config.save.infoFilePath,
+            ...content
+        );
+    },
+
+    error(...content: unknown[]) {
+        const messages = translate(config.language, "logger");
+        write(
+            messages.levels.error,
             config.color.errorColor,
             config.save.errorFilePath,
             ...content
@@ -199,8 +234,9 @@ export const logger = {
     },
 
     warning(...content: unknown[]) {
+        const messages = translate(config.language, "logger");
         write(
-            "warning",
+            messages.levels.warning,
             config.color.warningColor,
             config.save.warningFilePath,
             ...content
@@ -208,8 +244,9 @@ export const logger = {
     },
 
     debug(...content: unknown[]) {
+        const messages = translate(config.language, "logger");
         write(
-            "debug",
+            messages.levels.debug,
             config.color.debugColor,
             null,
             ...content
@@ -217,9 +254,9 @@ export const logger = {
     },
 
     custom(
-        level: string, 
-        color: ColorName | null | false, 
-        file: ConfigValue, 
+        level: string,
+        color: ColorName | null | false,
+        file: ConfigValue,
         ...content: unknown[]
     ) {
         write(level, color, file, ...content);
