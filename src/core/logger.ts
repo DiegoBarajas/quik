@@ -253,6 +253,10 @@ export const logger = {
         );
     },
 
+    clear() {
+        console.clear();
+    },
+
     custom(
         level: string,
         color: ColorName | null | false,
@@ -261,6 +265,4 @@ export const logger = {
     ) {
         write(level, color, file, ...content);
     }
-
-
 }

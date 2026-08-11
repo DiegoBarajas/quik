@@ -11,7 +11,7 @@ type HttpMethod =
     | "head"
     | "all";
 
-class QuickRouter {
+class QuikRouter {
     readonly router: RouterType;
     private pendingMiddleware: RequestHandler[] = [];
     private currentPath: string = "";
@@ -75,7 +75,7 @@ class QuickRouter {
 }
 
 function Router() {
-    return new QuickRouter;
+    return new QuikRouter;
 }
 
-export { QuickRouter, Router };
+export { QuikRouter, Router };

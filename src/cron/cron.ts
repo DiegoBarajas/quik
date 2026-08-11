@@ -1,4 +1,5 @@
-import cron, { type ScheduledTask } from "node-cron";
+import cron from "node-cron";
+import { type ScheduledTask } from "node-cron";
 
 import {
     CronTaskAlreadyExistsError,
@@ -9,7 +10,6 @@ import {
 
 import { isValidTimeZone } from "../core/time.js";
 import type { CronConfig, CronTask, PartialCronConfig } from "./types.js";
-
 
 // Default configuration 
 const defaultConfig: CronConfig = {
@@ -22,6 +22,10 @@ class QuikCron {
     private jobs = new Map<string, ScheduledTask>();
 
     #config: CronConfig = structuredClone(defaultConfig);
+
+    constructor() {
+        
+    }
 
     add(task: CronTask): void {
         if (this.tasks.has(task.name)) {
@@ -139,4 +143,4 @@ function Cron(): QuikCron {
     return new QuikCron();
 }
 
-export { Cron };
+export { QuikCron, Cron };

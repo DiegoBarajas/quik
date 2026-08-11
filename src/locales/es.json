@@ -10,7 +10,9 @@
     },
     "server": {
         "name": "servidor",
-        "start": "Servidor corriendo en"
+        "start": "Servidor corriendo en",
+        "routers_loaded": "rutas cargadas",
+        "crons_loaded": "crons cargados"
     },
     "time": {
         "invalidTimeZone1": "Zona horaria inválida:",

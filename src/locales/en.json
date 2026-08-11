@@ -10,7 +10,9 @@
     },
     "server": {
         "name": "server",
-        "start": "Server running at"
+        "start": "Server running at",
+        "routers_loaded": "routers loaded",
+        "crons_loaded": "crons loaded"
     },
     "time": {
         "invalidTimeZone1": "Invalid time zone:",

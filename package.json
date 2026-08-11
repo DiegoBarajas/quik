@@ -1,6 +1,6 @@
 {
   "name": "@desaubv/quik",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Quik is an Express-based library designed to simplify the creation of modern backends. It allows you to build APIs quickly, reducing repetitive code through clean syntax and intuitive tools.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -8,11 +8,20 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
-    "./cron": "./dist/cron/index.js"
+    "./cron": {
+      "import": "./dist/cron/index.js",
+      "require": "./dist/cron/index.js",
+      "types": "./dist/cron/index.d.ts"
+    },
+    "./http": {
+      "import": "./dist/http/index.js",
+      "require": "./dist/http/index.js",
+      "types": "./dist/http/index.d.ts"
+    }
   },
   "files": [
     "dist"

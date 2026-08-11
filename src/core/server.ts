@@ -1,10 +1,12 @@
 import express, { type Express, type RequestHandler } from "express";
 import http, { type Server as HTTPServer } from "node:http";
 
-import type { QuickRouter } from "./router.js";
+import { QuikRouter } from "./router.js";
 import { logger } from "./logger.js";
 import { translate } from "./translator.js";
 import { isValidTimeZone } from "./time.js";
+import { QuikCron } from "../cron/cron.js";
+import { ServerInvalidCronError, ServerInvalidRouteError } from "../errors/serverError.js";
 
 type JsonOptions = Parameters<typeof express.json>[0];
 type UrlencodedOptions = Parameters<typeof express.urlencoded>[0];
@@ -46,7 +48,7 @@ type QuikServerConfig = {
     http: HTTPConfig;
     express: ExpressConfig;
 };
-type RoutingDict = Record<string, QuickRouter>;
+type RoutingDict = Record<string, QuikRouter>;
 
 const defaultConfig: QuikServerConfig = {
     language: "en",
@@ -63,40 +65,38 @@ const defaultConfig: QuikServerConfig = {
 
 class QuikServer {
     app: Express;
-    httpQuikServer: HTTPServer;
+    httpServer: HTTPServer;
     middlewares: RequestHandler[] = [];
     routes: RoutingDict = {};
-    #config: QuikServerConfig;
+    crons: QuikCron[] = [];
+    config: QuikServerConfig;
 
     constructor() {
         this.app = express();
-        this.#config = structuredClone(defaultConfig);
-        this.httpQuikServer = http.createServer(
+        this.config = structuredClone(defaultConfig);
+        this.httpServer = http.createServer(
             this.app
         );
     }
 
-    config(): Readonly<QuikServerConfig> {
-        return Object.freeze(structuredClone(this.#config));
-    }
 
     setConfig(config: Partial<QuikServerConfig>) {
-        this.#config = {
-            ...this.#config,
+        this.config = {
+            ...this.config,
             ...config,
             http: {
-                ...this.#config.http,
+                ...this.config.http,
                 ...config.http
             },
             express: {
-                ...this.#config.express,
+                ...this.config.express,
                 ...config.express
             }
         };
 
         // Notify if the provided time zone is invalid
         if (config.timeZone && !isValidTimeZone(config.timeZone)) {
-            const messages = translate(this.#config.language, "time");
+            const messages = translate(this.config.language, "time");
 
             logger.warning(
                 `${messages.invalidTimeZone1} ${config.timeZone}. ${messages.invalidTimeZone2}`
@@ -106,7 +106,7 @@ class QuikServer {
         return this;
     }
 
-    middleware(...middlewares: RequestHandler[]) {
+    addMiddleware(...middlewares: RequestHandler[]) {
         this.middlewares.push(
             ...middlewares
         );
@@ -114,17 +114,25 @@ class QuikServer {
         return this;
     }
 
-    route(path: string, router: QuickRouter) {
+    addRoute(path: string, router: QuikRouter) {
+        if(!(router instanceof QuikRouter)){
+            throw new ServerInvalidRouteError(path)
+        }
+
+        if(!path.startsWith("/"))
+            path = "/" + path;
+
         this.routes[path] = router;
+        
         return this;
     }
 
 
-    listen() {
-        const { port, host } = this.#config.http;
-        const messages = translate(this.#config.language, "server");
+    #listen() {
+        const { port, host } = this.config.http;
+        const messages = translate(this.config.language, "server");
 
-        this.httpQuikServer.listen(port, host, () => {
+        this.httpServer.listen(port, host, () => {
             logger.info(`${messages.start} ${host ?? "localhost"}:${port}`);
         }
         );
@@ -132,23 +140,32 @@ class QuikServer {
         return this;
     }
 
+    addCron(cron: QuikCron) {                
+        if(cron.constructor.name != "QuikCron"){
+            throw new ServerInvalidCronError()
+        }
+        this.crons.push(cron);
+
+        return this;
+    }
+
     #configureHTTP() {
-        const config = this.#config.http;
+        const config = this.config.http;
 
         if (config.timeout)
-            this.httpQuikServer.timeout = config.timeout;
+            this.httpServer.timeout = config.timeout;
 
         if (config.keepAlive)
-            this.httpQuikServer.keepAliveTimeout = config.keepAlive;
+            this.httpServer.keepAliveTimeout = config.keepAlive;
 
         if (config.maxConnections)
-            this.httpQuikServer.maxConnections = config.maxConnections;
+            this.httpServer.maxConnections = config.maxConnections;
 
         return this;
     }
 
     #configureExpress() {
-        const config = this.#config.express;
+        const config = this.config.express;
 
         if (config.trustProxy !== undefined) {
             this.app.set(
@@ -162,7 +179,7 @@ class QuikServer {
     }
 
     #configureMiddleware() {
-        const bodyParser = this.#config.bodyParser;
+        const bodyParser = this.config.bodyParser;
 
         switch (bodyParser.type) {
             case "json":
@@ -208,6 +225,18 @@ class QuikServer {
                 router.router
             );
         }
+        const messages = translate(this.config.language, "server");
+        logger.info(`[ ROUTER ] ${Object.entries(this.routes).length} ${messages.routers_loaded}.`);
+        return this;
+    }
+
+    #loadCrons() {
+        for (const cron of this.crons) {
+            cron.start();
+        }
+        
+        const messages = translate(this.config.language, "server")
+        logger.info(`[  CRON  ] ${this.crons.length} ${messages.crons_loaded}.`)
 
         return this;
     }
@@ -216,10 +245,11 @@ class QuikServer {
         this.#configureExpress();
         this.#configureMiddleware();
         this.#configureRoutes();
+        this.#loadCrons();
 
         this.#configureHTTP();
 
-        this.listen();
+        this.#listen();
         return this;
     }
 }
