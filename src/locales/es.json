@@ -12,7 +12,9 @@
         "name": "servidor",
         "start": "Servidor corriendo en",
         "routers_loaded": "rutas cargadas",
-        "crons_loaded": "crons cargados"
+        "crons_loaded": "crons cargados",
+        "static_loaded": "carpetas estaticas cargadas",
+        "static_warn": "no existe el directorio"
     },
     "time": {
         "invalidTimeZone1": "Zona horaria inválida:",

@@ -1,5 +1,7 @@
 import express, { type Express, type RequestHandler } from "express";
 import http, { type Server as HTTPServer } from "node:http";
+import path from "node:path";
+import fs from "node:fs";
 
 import { QuikRouter } from "./router.js";
 import { logger } from "./logger.js";
@@ -68,6 +70,7 @@ class QuikServer {
     httpServer: HTTPServer;
     middlewares: RequestHandler[] = [];
     routes: RoutingDict = {};
+    staticDirs: string[] = [];
     crons: QuikCron[] = [];
     config: QuikServerConfig;
 
@@ -115,15 +118,15 @@ class QuikServer {
     }
 
     addRoute(path: string, router: QuikRouter) {
-        if(!(router instanceof QuikRouter)){
+        if (!(router instanceof QuikRouter)) {
             throw new ServerInvalidRouteError(path)
         }
 
-        if(!path.startsWith("/"))
+        if (!path.startsWith("/"))
             path = "/" + path;
 
         this.routes[path] = router;
-        
+
         return this;
     }
 
@@ -140,11 +143,28 @@ class QuikServer {
         return this;
     }
 
-    addCron(cron: QuikCron) {                
-        if(cron.constructor.name != "QuikCron"){
+    addCron(cron: QuikCron) {
+        if (cron.constructor.name != "QuikCron") {
             throw new ServerInvalidCronError()
         }
         this.crons.push(cron);
+
+        return this;
+    }
+
+    addStaticDir(...paths: string[]) {
+        for (const i in paths) {
+            const dir = paths[i] ?? "";
+            const dirPath = path.resolve(dir);
+
+            const exists = fs.existsSync(dirPath)
+            if (!exists) {
+                const messages = translate(this.config.language, "server");
+                logger.warning(`[ STATIC ] "${dir}" ${messages.static_warn}`);
+                continue;
+            }
+            this.staticDirs.push(...paths);
+        }
 
         return this;
     }
@@ -234,9 +254,22 @@ class QuikServer {
         for (const cron of this.crons) {
             cron.start();
         }
-        
+
         const messages = translate(this.config.language, "server")
         logger.info(`[  CRON  ] ${this.crons.length} ${messages.crons_loaded}.`)
+
+        return this;
+    }
+
+    #loadStaticDirs() {
+        for (const dir of this.staticDirs) {
+            const dirPath = path.resolve(dir);
+
+            this.app.use(express.static(dirPath));
+        }
+
+        const messages = translate(this.config.language, "server")
+        logger.info(`[ STATIC ] ${this.staticDirs.length} ${messages.static_loaded}.`)
 
         return this;
     }
@@ -244,6 +277,8 @@ class QuikServer {
     start() {
         this.#configureExpress();
         this.#configureMiddleware();
+
+        this.#loadStaticDirs()
         this.#configureRoutes();
         this.#loadCrons();
 
