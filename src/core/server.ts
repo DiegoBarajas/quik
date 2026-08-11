@@ -8,7 +8,7 @@ import { logger } from "./logger.js";
 import { translate } from "./translator.js";
 import { isValidTimeZone } from "./time.js";
 import { QuikCron } from "../cron/cron.js";
-import { ServerInvalidCronError, ServerInvalidRouteError } from "../errors/serverError.js";
+import { ServerInvalidCronError, ServerInvalidRouteError } from "./errors/serverErrors.js";
 
 type JsonOptions = Parameters<typeof express.json>[0];
 type UrlencodedOptions = Parameters<typeof express.urlencoded>[0];

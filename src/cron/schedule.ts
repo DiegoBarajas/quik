@@ -191,10 +191,7 @@ export class Schedule {
         return new ScheduleBuilder().at(time);
     }
 
-    static weekday(
-        weekday: Weekday,
-        time: string
-    ): string {
+    static weekday(weekday: Weekday, time: string): string {
         return new ScheduleBuilder().weekdayAt(
             weekday,
             time
