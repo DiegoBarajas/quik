@@ -16,7 +16,6 @@ type CronConfig = {
 
 type PartialCronConfig = Partial<CronConfig>;
 
-
 export type {
     CronTask,
     CronConfig,

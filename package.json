@@ -1,64 +1,70 @@
 {
-  "name": "@desaubv/quik",
-  "version": "0.0.7",
-  "description": "Quik is an Express-based library designed to simplify the creation of modern backends. It allows you to build APIs quickly, reducing repetitive code through clean syntax and intuitive tools.",
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+    "name": "@desaubv/quik",
+    "version": "0.0.8",
+    "description": "Quik is an Express-based library designed to simplify the creation of modern backends. It allows you to build APIs quickly, reducing repetitive code through clean syntax and intuitive tools.",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./cron": {
+            "types": "./dist/cron/index.d.ts",
+            "import": "./dist/cron/index.js",
+            "require": "./dist/cron/index.cjs"
+        },
+        "./http": {
+            "types": "./dist/http/index.d.ts",
+            "import": "./dist/http/index.js",
+            "require": "./dist/http/index.cjs"
+        },
+        "./ws": {
+            "types": "./dist/ws/index.d.ts",
+            "import": "./dist/ws/index.js",
+            "require": "./dist/ws/index.cjs"
+        }
     },
-    "./cron": {
-      "types": "./dist/cron/index.d.ts",
-      "import": "./dist/cron/index.js",
-      "require": "./dist/cron/index.cjs"
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch"
     },
-    "./http": {
-      "types": "./dist/http/index.d.ts",
-      "import": "./dist/http/index.js",
-      "require": "./dist/http/index.cjs"
+    "keywords": [
+        "quik",
+        "typescript",
+        "nodejs",
+        "express",
+        "router",
+        "middleware",
+        "typescript",
+        "backend"
+    ],
+    "author": "desaubv",
+    "homepage": "https://github.com/DiegoBarajas/quik",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DiegoBarajas/quik.git"
+    },
+    "bugs": {
+        "url": "https://github.com/DiegoBarajas/quik/issues"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "@types/express": "^5.0.6",
+        "@types/node": "^26.1.2",
+        "@types/node-cron": "^3.0.11",
+        "tsup": "^8.5.1",
+        "typescript": "~5.9.3"
+    },
+    "dependencies": {
+        "express": "^5.2.1",
+        "node-cron": "^4.6.0",
+        "socket.io": "^4.8.3"
     }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
-  },
-  "keywords": [
-    "quik",
-    "typescript",
-    "nodejs",
-    "express",
-    "router",
-    "middleware",
-    "typescript",
-    "backend"
-  ],
-  "author": "desaubv",
-  "homepage": "https://github.com/DiegoBarajas/quik",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/DiegoBarajas/quik.git"
-  },
-  "bugs": {
-    "url": "https://github.com/DiegoBarajas/quik/issues"
-  },
-  "license": "MIT",
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^26.1.2",
-    "@types/node-cron": "^3.0.11",
-    "tsup": "^8.5.1",
-    "typescript": "~5.9.3"
-  },
-  "dependencies": {
-    "express": "^5.2.1",
-    "node-cron": "^4.6.0"
-  }
 }
