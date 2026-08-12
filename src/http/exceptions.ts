@@ -35,7 +35,7 @@ class RequiredFieldException extends ValidationException {
 class InvalidTypeException extends ValidationException {
     constructor(
         public readonly field: string,
-        public readonly expected: string,
+        public readonly expected: string | undefined,
         public readonly received: string,
     ) {
         super(
@@ -56,11 +56,22 @@ class CustomValidationException extends ValidationException {
     }
 }
 
+class EmptyArrayException extends ValidationException {
+    constructor(
+        public readonly field: string,
+    ) {
+        super(`Field "${field}" must not be an empty array`);
+
+        this.name = "EmptyArrayException";
+    }
+}
+
 export {
     ValidationException,
     RequestBodyUndefinedException,
     InvalidBodyException,
     RequiredFieldException,
     InvalidTypeException,
-    CustomValidationException
+    CustomValidationException,
+    EmptyArrayException
 }
