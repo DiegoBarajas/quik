@@ -175,6 +175,8 @@ function validateType(
 
     // Primitive types
     switch (type?.description) {
+        case "any":
+            return true;
 
         case "null":
             return value === null;

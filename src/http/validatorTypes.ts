@@ -58,7 +58,8 @@ export const Types = {
     Boolean: Symbol("boolean"),
     Object: Symbol("object"),
     Null: Symbol("null"),
-
+    Any: Symbol("any"),
+    
     Array,
     Struct,
 };
