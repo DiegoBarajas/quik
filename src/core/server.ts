@@ -85,8 +85,7 @@ class QuikServer {
     routes: RoutingDict = {};
     staticDirs: string[] = [];
     crons: QuikCron[] = [];
-    ws: QuikWebSocket | undefined;
-    io: QuikSocketIO | undefined;
+    ws: QuikWebSocket | QuikSocketIO | undefined;
     viewDirs: string[] = [];
 
     notFoundHandler: RequestHandler | undefined;
@@ -102,7 +101,6 @@ class QuikServer {
             this.app
         );
 
-        this.io = undefined;
         this.ws = undefined;
 
         this.notFoundHandler = defaultNotFoundHandler;
@@ -219,7 +217,7 @@ class QuikServer {
         if (socket?.constructor.name != "QuikSocketIO") {
             throw new ServerInvalidSocketIOError()
         }
-        this.io = socket;
+        this.ws = socket;
 
         return this;
     }
@@ -348,19 +346,6 @@ class QuikServer {
 
         const messages = translate(this.config.language, "server")
         if (this.ws) {
-            logger.info(`[   WS   ] ${messages.socket_loaded}.`)
-        }
-
-        return this;
-    }
-
-    #loadIO() {
-        if (this.io) {
-            this.io.start(this.httpServer);
-        }
-
-        const messages = translate(this.config.language, "server")
-        if (this.io) {
             logger.info(`[ SOCKET ] ${messages.socket_loaded}.`)
         }
 
@@ -432,7 +417,6 @@ class QuikServer {
         this.#loadHandlers();
         this.#loadCrons();
         this.#loadWS();
-        this.#loadIO();
 
         this.#configureHTTP();
 
