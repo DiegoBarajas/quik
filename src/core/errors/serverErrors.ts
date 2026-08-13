@@ -10,4 +10,16 @@ class ServerInvalidCronError extends Error {
     }
 }
 
-export { ServerInvalidRouteError, ServerInvalidCronError }
+class ServerInvalidWebSocketError extends Error {
+    constructor() {
+        super(`Invalid object, must be a QuikWebSocket instance.`);
+    }
+}
+
+class ServerInvalidSocketIOError extends Error {
+    constructor() {
+        super(`Invalid object, must be a QuikSocketIO instance.`);
+    }
+}
+
+export { ServerInvalidRouteError, ServerInvalidCronError, ServerInvalidWebSocketError, ServerInvalidSocketIOError }

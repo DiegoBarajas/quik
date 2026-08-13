@@ -1,6 +1,6 @@
 {
     "name": "@desaubv/quik",
-    "version": "0.0.81",
+    "version": "0.1.0",
     "description": "Quik is an Express-based library designed to simplify the creation of modern backends. It allows you to build APIs quickly, reducing repetitive code through clean syntax and intuitive tools.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -26,14 +26,21 @@
             "types": "./dist/ws/index.d.ts",
             "import": "./dist/ws/index.js",
             "require": "./dist/ws/index.cjs"
+        },
+        "./socket.io": {
+            "types": "./dist/socket.io/index.d.ts",
+            "import": "./dist/socket.io/index.js",
+            "require": "./dist/socket.io/index.cjs"
         }
+        
     },
     "files": [
         "dist"
     ],
     "scripts": {
         "build": "tsup",
-        "dev": "tsup --watch"
+        "dev": "tsup --watch",
+        "publish": "npm publish --access public --tag latest"
     },
     "keywords": [
         "quik",
@@ -65,6 +72,7 @@
     "dependencies": {
         "express": "^5.2.1",
         "node-cron": "^4.6.0",
-        "socket.io": "^4.8.3"
+        "socket.io": "^4.8.3",
+        "ws": "^8.21.3"
     }
 }

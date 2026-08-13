@@ -1,1 +1,1 @@
-export { Socket } from "./websockets.js";
+export { WebSocket, QuikWebSocket } from "./websockets.js";

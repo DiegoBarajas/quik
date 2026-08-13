@@ -15,7 +15,10 @@
         "crons_loaded": "crons cargados",
         "socket_loaded": "socket cargado",
         "static_loaded": "carpetas estaticas cargadas",
-        "static_warn": "no existe el directorio"
+        "views_loaded": "carpetas de vistas cargadas",
+
+        "static_warn": "no existe el directorio",
+        "view_warn": "no existe el archivo"
     },
     "time": {
         "invalidTimeZone1": "Zona horaria inválida:",

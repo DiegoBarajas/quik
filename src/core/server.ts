@@ -10,10 +10,11 @@ import { isValidTimeZone } from "./time.js";
 import { QuikCron } from "../cron/cron.js";
 
 
-import { ServerInvalidCronError, ServerInvalidRouteError } from "./errors/serverErrors.js";
+import { ServerInvalidCronError, ServerInvalidRouteError, ServerInvalidSocketIOError, ServerInvalidWebSocketError } from "./errors/serverErrors.js";
 import { QuikNotFoundHandler } from "./handlers/notFoundHandler.js";
 import { QuikErrorHandler } from "./handlers/httpErrorHandler.js";
-import type { QuikSocket } from "../ws/websockets.js";
+import type { QuikSocketIO } from "../socket.io/socket.js";
+import type { QuikWebSocket } from "../ws/websockets.js";
 
 type JsonOptions = Parameters<typeof express.json>[0];
 type UrlencodedOptions = Parameters<typeof express.urlencoded>[0];
@@ -45,8 +46,12 @@ type HTTPConfig = {
     maxConnections?: number;
     shutdownTimeout?: number;
 };
+
 type ExpressConfig = {
+    name?: string;
+    env?: string;
     trustProxy?: boolean;
+    viewEngine?: string;
 };
 type QuikServerConfig = {
     language: Language,
@@ -80,7 +85,9 @@ class QuikServer {
     routes: RoutingDict = {};
     staticDirs: string[] = [];
     crons: QuikCron[] = [];
-    socket: QuikSocket | undefined;
+    ws: QuikWebSocket | undefined;
+    io: QuikSocketIO | undefined;
+    viewDirs: string[] = [];
 
     notFoundHandler: RequestHandler | undefined;
     errorHandler: ErrorRequestHandler | undefined;
@@ -95,7 +102,8 @@ class QuikServer {
             this.app
         );
 
-        this.socket = undefined;
+        this.io = undefined;
+        this.ws = undefined;
 
         this.notFoundHandler = defaultNotFoundHandler;
         this.errorHandler = defaultErrorHandler;
@@ -170,14 +178,22 @@ class QuikServer {
     }
 
 
-    #listen() {
-        const { port, host } = this.config.http;
-        const messages = translate(this.config.language, "server");
+    addViewDir(...paths: string[]) {
+        for (const view of paths) {
+            const viewPath = path.resolve(view);
 
-        this.httpServer.listen(port, host, () => {
-            logger.info(`${messages.start} ${host ?? "localhost"}:${port}`);
+            if (!fs.existsSync(viewPath)) {
+                const messages = translate(this.config.language, "server");
+
+                logger.warning(
+                    `[ VIEW ] "${view}" ${messages.view_warn}`
+                );
+
+                continue;
+            }
+
+            this.viewDirs.push(viewPath);
         }
-        );
 
         return this;
     }
@@ -191,56 +207,69 @@ class QuikServer {
         return this;
     }
 
-    addSocket(socket: QuikSocket | undefined) {
-        if (socket?.constructor.name != "QuikSocket") {
-            throw new ServerInvalidCronError()
+    useWebSocket(ws: QuikWebSocket) {
+        if (ws.constructor.name != "QuikWebSocket") {
+            throw new ServerInvalidWebSocketError()
         }
-        this.socket = socket;
+        this.ws = ws;
+        return this;
+    }
+
+    useSocketIO(socket: QuikSocketIO) {
+        if (socket?.constructor.name != "QuikSocketIO") {
+            throw new ServerInvalidSocketIOError()
+        }
+        this.io = socket;
 
         return this;
     }
 
     addStaticDir(...paths: string[]) {
-        for (const i in paths) {
-            const dir = paths[i] ?? "";
+        for (const dir of paths) {
             const dirPath = path.resolve(dir);
 
-            const exists = fs.existsSync(dirPath)
-            if (!exists) {
+            if (!fs.existsSync(dirPath)) {
                 const messages = translate(this.config.language, "server");
-                logger.warning(`[ STATIC ] "${dir}" ${messages.static_warn}`);
+                logger.warning(
+                    `[ STATIC ] "${dir}" ${messages.static_warn}`
+                );
+
                 continue;
             }
-            this.staticDirs.push(...paths);
+
+            this.staticDirs.push(dirPath);
         }
-
-        return this;
-    }
-
-    #configureHTTP() {
-        const config = this.config.http;
-
-        if (config.timeout)
-            this.httpServer.timeout = config.timeout;
-
-        if (config.keepAlive)
-            this.httpServer.keepAliveTimeout = config.keepAlive;
-
-        if (config.maxConnections)
-            this.httpServer.maxConnections = config.maxConnections;
 
         return this;
     }
 
     #configureExpress() {
         const config = this.config.express;
+        const { name, env, trustProxy, viewEngine } = config;
 
-        if (config.trustProxy !== undefined) {
+        if (trustProxy) {
             this.app.set(
                 "trust proxy",
                 config.trustProxy
             );
+        }
 
+        if (env) {
+            this.app.set("env", config.env);
+        }
+
+        if (name) {
+            this.app.set("name", name);
+        }
+
+        if (viewEngine) {
+            this.app.set("view engine", viewEngine);
+        }
+
+        if (this.viewDirs.length > 0) {
+            const messages = translate(this.config.language, "server")
+            logger.info(`[  VIEWS  ] ${this.viewDirs.length} ${messages.views_loaded}.`)
+            this.app.set("views", this.viewDirs);
         }
 
         return this;
@@ -285,7 +314,6 @@ class QuikServer {
         return this;
     }
 
-
     #loadRoutes() {
         for (const [path, router] of Object.entries(this.routes)) {
             this.app.use(
@@ -294,7 +322,7 @@ class QuikServer {
             );
         }
         const messages = translate(this.config.language, "server");
-        if(Object.entries(this.routes).length > 0){
+        if (Object.entries(this.routes).length > 0) {
             logger.info(`[ ROUTER ] ${Object.entries(this.routes).length} ${messages.routers_loaded}.`);
         }
         return this;
@@ -306,21 +334,33 @@ class QuikServer {
         }
 
         const messages = translate(this.config.language, "server")
-        if(this.crons.length > 0){
+        if (this.crons.length > 0) {
             logger.info(`[  CRON  ] ${this.crons.length} ${messages.crons_loaded}.`)
         }
 
         return this;
     }
 
-    #loadSocket() {
-        if (this.socket) {
-            this.socket.start();
-            this.socket.io.attach(this.httpServer);
+    #loadWS() {
+        if (this.ws) {
+            this.ws.start(this.httpServer);
         }
 
         const messages = translate(this.config.language, "server")
-        if(this.socket){
+        if (this.ws) {
+            logger.info(`[   WS   ] ${messages.socket_loaded}.`)
+        }
+
+        return this;
+    }
+
+    #loadIO() {
+        if (this.io) {
+            this.io.start(this.httpServer);
+        }
+
+        const messages = translate(this.config.language, "server")
+        if (this.io) {
             logger.info(`[ SOCKET ] ${messages.socket_loaded}.`)
         }
 
@@ -335,7 +375,7 @@ class QuikServer {
         }
 
         const messages = translate(this.config.language, "server")
-        if(this.staticDirs.length > 0){
+        if (this.staticDirs.length > 0) {
             logger.info(`[ STATIC ] ${this.staticDirs.length} ${messages.static_loaded}.`)
         }
 
@@ -356,6 +396,33 @@ class QuikServer {
         }
     }
 
+    #configureHTTP() {
+        const config = this.config.http;
+
+        if (config.timeout)
+            this.httpServer.timeout = config.timeout;
+
+        if (config.keepAlive)
+            this.httpServer.keepAliveTimeout = config.keepAlive;
+
+        if (config.maxConnections)
+            this.httpServer.maxConnections = config.maxConnections;
+
+        return this;
+    }
+
+    #listen() {
+        const { port, host } = this.config.http;
+        const messages = translate(this.config.language, "server");
+
+        this.httpServer.listen(port, host, () => {
+            logger.info(`${messages.start} ${host ?? "localhost"}:${port}`);
+        }
+        );
+
+        return this;
+    }
+
     start() {
         this.#configureExpress();
         this.#configureMiddleware();
@@ -364,7 +431,8 @@ class QuikServer {
         this.#loadRoutes();
         this.#loadHandlers();
         this.#loadCrons();
-        this.#loadSocket();
+        this.#loadWS();
+        this.#loadIO();
 
         this.#configureHTTP();
 

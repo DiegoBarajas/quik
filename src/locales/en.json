@@ -15,7 +15,10 @@
         "crons_loaded": "crons loaded",
         "socket_loaded": "socket loaded",
         "static_loaded": "static dirs loaded",
-        "static_warn": "directory does not exist"
+        "views_loaded": "views dirs loaded",
+
+        "static_warn": "directory does not exist",
+        "view_warn": "file don't not exist"
     },
     "time": {
         "invalidTimeZone1": "Invalid time zone:",

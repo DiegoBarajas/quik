@@ -6,6 +6,7 @@ export default defineConfig({
         "cron/index": "src/cron/index.ts",
         "http/index": "src/http/index.ts",
         "ws/index": "src/ws/index.ts",
+        "socket.io/index": "src/socket.io/index.ts"
     },
     outDir: "dist",
     format: ["esm", "cjs"],

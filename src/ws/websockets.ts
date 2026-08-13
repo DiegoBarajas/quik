@@ -1,69 +1,143 @@
-import { Server, type Socket as SocketIo } from "socket.io";
+import {
+    WebSocketServer,
+    WebSocket as WS,
+    type RawData,
+} from "ws";
 
-type SocketHandler = (socket: SocketIo) => void;
-type EmptySocketHandler = () => void;
-type SocketEventHandler = (socket: SocketIo, ...args: any[]) => void;
+import type { Server as HTTPServer } from "node:http";
 
-class QuikSocket {
-    io: Server;
+type WebSocketClient = WS;
 
-    private onConnectHandler?: SocketHandler;
-    private onDisconnectHandler?: SocketHandler;
+type ConnectHandler = (
+    client: WebSocketClient
+) => void;
 
-    private events = new Map<string, SocketEventHandler>();
+type MessageHandler = (
+    client: WebSocketClient,
+    message: RawData
+) => void;
 
-    constructor() {
-        this.io = new Server();
+type DisconnectHandler = (
+    client: WebSocketClient
+) => void;
+
+type ErrorHandler = (
+    client: WebSocketClient,
+    error: Error
+) => void;
+
+class QuikWebSocket {
+    private server?: WebSocketServer;
+
+    private connectHandler?: ConnectHandler;
+    private messageHandler?: MessageHandler;
+    private disconnectHandler?: DisconnectHandler;
+    private errorHandler?: ErrorHandler;
+
+    onConnect(handler: ConnectHandler) {
+        this.connectHandler = handler;
+
+        return this;
     }
 
-    onConnect(handler?: SocketHandler) {
-        if (handler){
-            this.onConnectHandler = handler;
+    onMessage(handler: MessageHandler) {
+        this.messageHandler = handler;
+
+        return this;
+    }
+
+    onDisconnect(handler: DisconnectHandler) {
+        this.disconnectHandler = handler;
+
+        return this;
+    }
+
+    onError(handler: ErrorHandler) {
+        this.errorHandler = handler;
+
+        return this;
+    }
+
+    send(client: WebSocketClient,
+        message: string | Buffer
+    ) {
+        if (client.readyState === WS.OPEN) {
+            client.send(message);
         }
 
         return this;
     }
 
-    onDisconnect(handler?: SocketHandler) {
-        if (handler){
-            this.onDisconnectHandler = handler;
+    broadcast(message: string | Buffer) {
+        if (!this.server) {
+            throw new Error(
+                "WebSocket server has not been started."
+            );
         }
 
-        return this;
-    }
-
-    addEvent(keyword: string, handler: SocketEventHandler) {
-        this.events.set(keyword, handler);
-
-        return this;
-    }
-
-    start() {
-        this.io.on("connection", (socket) => {
-            // On connect
-            this.onConnectHandler?.(socket);
-
-            // Events
-            for (const [keyword, handler] of this.events) {
-                socket.on(keyword, (...args) => handler(socket, ...args));
+        for (const client of this.server.clients) {
+            if (client.readyState === WS.OPEN) {
+                client.send(message);
             }
+        }
 
-            // On disconnect
-            socket.on("disconnect", () => {
-                this.onDisconnectHandler?.(socket);
+        return this;
+    }
+
+    start(server: HTTPServer) {
+        if (this.server) {
+            return this;
+        }
+
+        this.server = new WebSocketServer({
+            server,
+        });
+
+        this.server.on("connection", (client) => {
+            this.connectHandler?.(client);
+
+            client.on("message", (message) => {
+                this.messageHandler?.(
+                    client,
+                    message
+                );
             });
 
+            client.on("close", () => {
+                this.disconnectHandler?.(client);
+            });
+
+            client.on("error", (error) => {
+                this.errorHandler?.(
+                    client,
+                    error
+                );
+            });
         });
 
         return this;
     }
+
+    close() {
+        this.server?.close();
+
+        return this;
+    }
 }
 
-function Socket() {
-    return new QuikSocket();
+function WebSocket() {
+    return new QuikWebSocket();
 }
 
 export {
-    Socket,
-    QuikSocket
+    WebSocket,
+    QuikWebSocket,
+};
+
+export type {
+    WebSocketClient,
+    ConnectHandler,
+    MessageHandler,
+    DisconnectHandler,
+    ErrorHandler,
 };
