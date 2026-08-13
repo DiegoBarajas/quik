@@ -1,6 +1,15 @@
-import type { Request, Response } from "express";
+import type { ErrorRequestHandler, Request, Response, Errback } from "express";
 import { logger } from "../logger.js";
+import { Status } from "../../http/index.js";
 
-export function httpErrorHandler(req: Request,res: Response) {
-    logger.error("No deberia estar aqui")
-}
+export const QuikErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
+    logger.error(err);
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(Status.INTERNAL_SERVER_ERROR).json({
+        error: "Internal Server Error"
+    });
+};

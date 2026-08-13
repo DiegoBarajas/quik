@@ -1,4 +1,4 @@
-import express, { type Express, type RequestHandler } from "express";
+import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import http, { type Server as HTTPServer } from "node:http";
 import path from "node:path";
 import fs from "node:fs";
@@ -8,7 +8,11 @@ import { logger } from "./logger.js";
 import { translate } from "./translator.js";
 import { isValidTimeZone } from "./time.js";
 import { QuikCron } from "../cron/cron.js";
+
+
 import { ServerInvalidCronError, ServerInvalidRouteError } from "./errors/serverErrors.js";
+import { QuikNotFoundHandler } from "./handlers/notFoundHandler.js";
+import { QuikErrorHandler } from "./handlers/httpErrorHandler.js";
 
 type JsonOptions = Parameters<typeof express.json>[0];
 type UrlencodedOptions = Parameters<typeof express.urlencoded>[0];
@@ -64,14 +68,22 @@ const defaultConfig: QuikServerConfig = {
 
     express: {}
 }
+const defaultNotFoundHandler = QuikNotFoundHandler;
+const defaultErrorHandler = QuikErrorHandler;
 
 class QuikServer {
     app: Express;
     httpServer: HTTPServer;
+
     middlewares: RequestHandler[] = [];
     routes: RoutingDict = {};
     staticDirs: string[] = [];
     crons: QuikCron[] = [];
+
+    notFoundHandler: RequestHandler | undefined;
+    errorHandler: ErrorRequestHandler | undefined;
+
+
     config: QuikServerConfig;
 
     constructor() {
@@ -80,6 +92,9 @@ class QuikServer {
         this.httpServer = http.createServer(
             this.app
         );
+
+        this.notFoundHandler = defaultNotFoundHandler;
+        this.errorHandler = defaultErrorHandler;
     }
 
 
@@ -105,6 +120,26 @@ class QuikServer {
                 `${messages.invalidTimeZone1} ${config.timeZone}. ${messages.invalidTimeZone2}`
             );
         }
+
+        return this;
+    }
+
+    setNotFoundHandler(handler: RequestHandler | null) {
+        if(!handler){
+            this.notFoundHandler = undefined;
+            return this;
+        }
+        this.notFoundHandler = handler;
+
+        return this;
+    }
+
+    setErrorHandler(handler: ErrorRequestHandler | null) {
+        if(!handler){
+            this.errorHandler = undefined;
+            return this;
+        }
+        this.errorHandler = handler;
 
         return this;
     }
@@ -274,12 +309,27 @@ class QuikServer {
         return this;
     }
 
+    #loadHandlers() {
+        if(this.notFoundHandler){
+            this.app.use(
+                this.notFoundHandler
+            );
+        }
+
+        if(this.errorHandler){
+            this.app.use(
+                this.errorHandler
+            );
+        }
+    }
+
     start() {
         this.#configureExpress();
         this.#configureMiddleware();
 
         this.#loadStaticDirs()
         this.#configureRoutes();
+        this.#loadHandlers();
         this.#loadCrons();
 
         this.#configureHTTP();
