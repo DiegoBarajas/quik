@@ -13,6 +13,7 @@
         "start": "Servidor corriendo en",
         "routers_loaded": "rutas cargadas",
         "crons_loaded": "crons cargados",
+        "socket_loaded": "socket cargado",
         "static_loaded": "carpetas estaticas cargadas",
         "static_warn": "no existe el directorio"
     },

@@ -13,6 +13,7 @@
         "start": "Server running at",
         "routers_loaded": "routers loaded",
         "crons_loaded": "crons loaded",
+        "socket_loaded": "socket loaded",
         "static_loaded": "static dirs loaded",
         "static_warn": "directory does not exist"
     },

@@ -5,6 +5,7 @@ export default defineConfig({
         index: "src/index.ts",
         "cron/index": "src/cron/index.ts",
         "http/index": "src/http/index.ts",
+        "ws/index": "src/ws/index.ts",
     },
     outDir: "dist",
     format: ["esm", "cjs"],

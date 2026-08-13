@@ -13,6 +13,7 @@ import { QuikCron } from "../cron/cron.js";
 import { ServerInvalidCronError, ServerInvalidRouteError } from "./errors/serverErrors.js";
 import { QuikNotFoundHandler } from "./handlers/notFoundHandler.js";
 import { QuikErrorHandler } from "./handlers/httpErrorHandler.js";
+import type { QuikSocket } from "../ws/websockets.js";
 
 type JsonOptions = Parameters<typeof express.json>[0];
 type UrlencodedOptions = Parameters<typeof express.urlencoded>[0];
@@ -79,6 +80,7 @@ class QuikServer {
     routes: RoutingDict = {};
     staticDirs: string[] = [];
     crons: QuikCron[] = [];
+    socket: QuikSocket | undefined;
 
     notFoundHandler: RequestHandler | undefined;
     errorHandler: ErrorRequestHandler | undefined;
@@ -92,6 +94,8 @@ class QuikServer {
         this.httpServer = http.createServer(
             this.app
         );
+
+        this.socket = undefined;
 
         this.notFoundHandler = defaultNotFoundHandler;
         this.errorHandler = defaultErrorHandler;
@@ -125,7 +129,7 @@ class QuikServer {
     }
 
     setNotFoundHandler(handler: RequestHandler | null) {
-        if(!handler){
+        if (!handler) {
             this.notFoundHandler = undefined;
             return this;
         }
@@ -135,7 +139,7 @@ class QuikServer {
     }
 
     setErrorHandler(handler: ErrorRequestHandler | null) {
-        if(!handler){
+        if (!handler) {
             this.errorHandler = undefined;
             return this;
         }
@@ -183,6 +187,15 @@ class QuikServer {
             throw new ServerInvalidCronError()
         }
         this.crons.push(cron);
+
+        return this;
+    }
+
+    addSocket(socket: QuikSocket | undefined) {
+        if (socket?.constructor.name != "QuikSocket") {
+            throw new ServerInvalidCronError()
+        }
+        this.socket = socket;
 
         return this;
     }
@@ -273,7 +286,7 @@ class QuikServer {
     }
 
 
-    #configureRoutes() {
+    #loadRoutes() {
         for (const [path, router] of Object.entries(this.routes)) {
             this.app.use(
                 path,
@@ -281,7 +294,9 @@ class QuikServer {
             );
         }
         const messages = translate(this.config.language, "server");
-        logger.info(`[ ROUTER ] ${Object.entries(this.routes).length} ${messages.routers_loaded}.`);
+        if(Object.entries(this.routes).length > 0){
+            logger.info(`[ ROUTER ] ${Object.entries(this.routes).length} ${messages.routers_loaded}.`);
+        }
         return this;
     }
 
@@ -291,7 +306,23 @@ class QuikServer {
         }
 
         const messages = translate(this.config.language, "server")
-        logger.info(`[  CRON  ] ${this.crons.length} ${messages.crons_loaded}.`)
+        if(this.crons.length > 0){
+            logger.info(`[  CRON  ] ${this.crons.length} ${messages.crons_loaded}.`)
+        }
+
+        return this;
+    }
+
+    #loadSocket() {
+        if (this.socket) {
+            this.socket.start();
+            this.socket.io.attach(this.httpServer);
+        }
+
+        const messages = translate(this.config.language, "server")
+        if(this.socket){
+            logger.info(`[ SOCKET ] ${messages.socket_loaded}.`)
+        }
 
         return this;
     }
@@ -304,19 +335,21 @@ class QuikServer {
         }
 
         const messages = translate(this.config.language, "server")
-        logger.info(`[ STATIC ] ${this.staticDirs.length} ${messages.static_loaded}.`)
+        if(this.staticDirs.length > 0){
+            logger.info(`[ STATIC ] ${this.staticDirs.length} ${messages.static_loaded}.`)
+        }
 
         return this;
     }
 
     #loadHandlers() {
-        if(this.notFoundHandler){
+        if (this.notFoundHandler) {
             this.app.use(
                 this.notFoundHandler
             );
         }
 
-        if(this.errorHandler){
+        if (this.errorHandler) {
             this.app.use(
                 this.errorHandler
             );
@@ -328,9 +361,10 @@ class QuikServer {
         this.#configureMiddleware();
 
         this.#loadStaticDirs()
-        this.#configureRoutes();
+        this.#loadRoutes();
         this.#loadHandlers();
         this.#loadCrons();
+        this.#loadSocket();
 
         this.#configureHTTP();
 
